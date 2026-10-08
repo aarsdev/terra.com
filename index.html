@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="NOVA Creators — a real, interactive creative studio and browser-based site builder." />
+  <meta name="description" content="NOVA Creators — a real, interactive creative studio and browser-based site builder, hosted on GitHub Pages." />
   <meta name="theme-color" content="#08080d" />
-  <title>NOVA Creators — Build Beyond Limits</title>
+  <title>NOVA Creators — Terra / Digital Studio</title>
 
   <style>
     :root {
@@ -170,7 +170,54 @@
       font-weight: 800;
     }
 
-    .button.small { padding: 8px 11px; font-size: .8rem; }
+
+    .button.small {
+      padding: 8px 11px;
+      font-size: .8rem;
+    }
+
+    .project-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: -16px 0 18px;
+    }
+
+    .filter-btn {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--panel);
+      transition: .2s ease;
+      font-size: .76rem;
+    }
+
+    .filter-btn:hover {
+      color: var(--text);
+      background: var(--panel-strong);
+    }
+
+    .filter-btn.active {
+      color: #fff;
+      background: rgba(139,92,246,.16);
+      border-color: rgba(139,92,246,.4);
+    }
+
+    body.light .brand-muted {
+      color: #5b5d68;
+    }
+
+    body.light .announcement,
+    body.light nav,
+    body.light .mobile-menu {
+      background: rgba(246,247,251,.78);
+    }
+
+    body.light .filter-btn.active {
+      color: #22232d;
+    }
+
     .button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
     .menu-button {
@@ -877,6 +924,9 @@
         </div>
 
         <div class="nav-actions">
+          <button class="button small" id="themeToggle" type="button">
+            ☀ Theme
+          </button>
           <button class="button primary" id="jumpBuilder">
             Create a site ↗
           </button>
@@ -941,8 +991,52 @@
             <span class="tiny-chip">
               No fake analytics
             </span>
+
+            <button
+              class="tiny-chip"
+              id="copySiteUrl"
+              type="button"
+              style="border:1px solid var(--line);cursor:pointer;"
+            >
+              Copy site link
+            </button>
           </div>
 
+        </div>
+      </div>
+    </section>
+
+    <!-- DEPLOYMENT STATUS -->
+    <section class="container reveal">
+      <div class="section-head">
+        <div>
+          <div class="label">Deployment</div>
+          <h2>This page knows where it is running.</h2>
+        </div>
+        <p>
+          The card below uses the real browser URL. On GitHub Pages it will show
+          the actual published address instead of pretending a local preview is public.
+        </p>
+      </div>
+
+      <div class="panel status-panel">
+        <div class="status-main">
+          <div class="status-orb">↗</div>
+          <div>
+            <div class="status-title" id="hostTitle">Detecting host…</div>
+            <div class="status-copy" id="hostCopy">
+              Reading the current URL from your browser.
+            </div>
+            <div class="status-clock">
+              Current address: <span id="siteAddress">Loading…</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-actions">
+          <button class="button small" id="copyCurrentUrl" type="button">
+            Copy current URL
+          </button>
         </div>
       </div>
     </section>
@@ -1428,6 +1522,109 @@
         toast.classList.remove("show");
       }, 2400);
     }
+
+    // -------------------------
+    // THEME SWITCHER
+    // -------------------------
+
+    const THEME_KEY = "nova-site-theme";
+
+    function applyTheme(theme) {
+      document.body.classList.toggle("light", theme === "light");
+      localStorage.setItem(THEME_KEY, theme);
+
+      const button = $("#themeToggle");
+      if (button) {
+        button.textContent =
+          theme === "light" ? "☾ Dark" : "☀ Theme";
+      }
+    }
+
+    applyTheme(
+      localStorage.getItem(THEME_KEY) || "dark"
+    );
+
+    $("#themeToggle")?.addEventListener("click", () => {
+      const next =
+        document.body.classList.contains("light")
+          ? "dark"
+          : "light";
+
+      applyTheme(next);
+      showToast("Theme changed.");
+    });
+
+    // -------------------------
+    // REAL GITHUB PAGES / HOST URL
+    // -------------------------
+
+    function updateHostStatus() {
+      const url = window.location.href;
+      const hostname = window.location.hostname;
+
+      const onGitHubPages =
+        hostname.endsWith(".github.io");
+
+      const title = $("#hostTitle");
+      const copy = $("#hostCopy");
+      const address = $("#siteAddress");
+
+      if (title && copy && address) {
+        title.textContent = onGitHubPages
+          ? "Published on GitHub Pages"
+          : "Running from a local or custom host";
+
+        copy.textContent = onGitHubPages
+          ? "This browser is viewing the actual GitHub Pages address."
+          : "The browser is showing the site's current real URL.";
+
+        address.textContent = url;
+      }
+    }
+
+    updateHostStatus();
+
+    $("#copyCurrentUrl")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        showToast("Current site URL copied.");
+      } catch {
+        showToast("Clipboard permission was blocked.");
+      }
+    });
+
+    $("#copySiteUrl")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        showToast("Site link copied.");
+      } catch {
+        showToast("Clipboard permission was blocked.");
+      }
+    });
+
+    // -------------------------
+    // PROJECT FILTERS
+    // -------------------------
+
+    $$("#projectFilters .filter-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        $$("#projectFilters .filter-btn").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        const filter = button.dataset.filter;
+
+        $$(".showcase .project").forEach((project) => {
+          const matches =
+            filter === "all" ||
+            project.dataset.category === filter;
+
+          project.style.display = matches ? "" : "none";
+        });
+      });
+    });
 
     // -------------------------
     // MOBILE MENU
